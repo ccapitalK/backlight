@@ -1,6 +1,7 @@
 extern crate argparse;
 
 use std::fs::{read_dir, File};
+use std::fmt;
 use std::ffi::OsString;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::path::PathBuf;
@@ -76,6 +77,7 @@ impl Backlights {
 #[derive(Debug)]
 struct Backlight {
     name: OsString,
+    actual_brightness: usize,
     brightness: usize,
     max_brightness: usize
 }
@@ -89,8 +91,12 @@ impl Backlight {
         path_buf.pop();
         path_buf.push("max_brightness");
         let max_brightness = try!(read_file_to_usize(&path_buf));
+        path_buf.pop();
+        path_buf.push("actual_brightness");
+        let actual_brightness = try!(read_file_to_usize(&path_buf));
         Ok(Self {
             name: file_name.clone(),
+            actual_brightness: actual_brightness,
             brightness: brightness,
             max_brightness: max_brightness
         })
@@ -101,6 +107,12 @@ impl Backlight {
         path_buf.push("brightness");
         write_file(&path_buf, new_value.to_string().as_bytes()).expect("Couldn't write to brightness file");
         self.brightness = read_file_to_usize(&path_buf).unwrap();
+    }
+}
+
+impl fmt::Display for Backlight {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Backlight Name: {:?}\n    Brightness: {}\n    Actual Brightness: {}\n    Max Brightness: {}\n", self.name, self.brightness, self.actual_brightness, self.max_brightness)
     }
 }
 
@@ -140,7 +152,7 @@ fn main() {
             Some(v) => {
                 backlight.set_brightness(v);
             },
-            None => println!("{:#?}", backlight)
+            None => println!("{:#}", backlight)
         };
     }
 }
